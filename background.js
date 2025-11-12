@@ -82,7 +82,7 @@ chrome.webRequest.onCompleted.addListener(async (details) => {
             if (lastSent[hostname] && lastSent[hostname] === jsessionVal) {
                 console.log(`${hostname} session already sent, skipping.`);
 
-                // return;
+                return;
             }
 
             const payload = {

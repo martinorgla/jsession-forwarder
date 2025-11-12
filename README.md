@@ -5,16 +5,16 @@ JSession Forwarder is a Chrome extension that reads the `JSESSIONID` and `XSRF-T
 
 ![JSession Forwarder Icon](icons/icon.svg)
 
----
-
 ## Features
 
 - Automatically detects `JSESSIONID` and `XSRF-TOKEN` cookies on the active page.
 - Sends the session data to your configured endpoint.
 - Stores the timestamp of the last successful session forwarding.
-- Simple and lightweight Chrome extension with a popup for manual sending.
+- Simple and lightweight Chrome extension with a popup for configuration.
 
----
+## Screenshot
+
+![JSession Forwarder Screensot](screenshot.png)
 
 ## Installation
 
@@ -25,24 +25,12 @@ JSession Forwarder is a Chrome extension that reads the `JSESSIONID` and `XSRF-T
 
 > Note: Once installed, the extension icon will appear in the toolbar.
 
----
-
 ## Usage
 
 1. Navigate to the website where you are logged in.
 2. Click the **JSession Forwarder** icon in the Chrome toolbar.
 3. The extension will automatically detect the cookies and send them to your endpoint.
-4. The last sent time is stored in Chrome's local storage.
-
----
-
-## Configuration
-
-- Endpoint URL for session forwarding: update in the extension code (`popup.js` or background script) to your desired endpoint.
-
-```javascript
-const endpoint = 'https://yourdomain.com/patchSession';
-```
+4. The last sent time is stored in Chrome's local storage alongside with the configured endpoint.
 
 ## Storage
 

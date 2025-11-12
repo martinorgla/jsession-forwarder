@@ -1,6 +1,6 @@
 # JSession Forwarder
 
-**Description:**  
+## Description  
 JSession Forwarder is a Chrome extension that reads the `JSESSIONID` and `XSRF-TOKEN` cookies from the current site and sends their values to a specified endpoint via a `PATCH` request.
 
 ![JSession Forwarder Icon](icons/icon.svg)

@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32" fill="none">
+    <circle cx="16" cy="16" r="16" fill="#8000FF"/> <!-- lilla taust -->
+
+    <circle cx="8" cy="16" r="6" fill="white"/>
+    <circle cx="6" cy="14" r="1.2" fill="#8000FF"/>
+    <circle cx="10" cy="18" r="1.2" fill="#8000FF"/>
+    <circle cx="9" cy="15" r="1.2" fill="#8000FF"/>
+
+    <g id="arrow" transform="translate(22,0)">
+        <path d="M0 12 L8 16 L0 20 V18 H-6 V14 H0 V12 Z" fill="white"/>
+    </g>
+</svg>

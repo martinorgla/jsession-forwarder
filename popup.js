@@ -4,7 +4,8 @@ const enabledCheckbox = document.getElementById("enabled");
 const saveBtn = document.getElementById("save");
 const statusTxt = document.getElementById("statustxt");
 const endpointTxt = document.getElementById("endpointTxt");
-const sentResTimeTxt = document.getElementById("sentResTimeTxt");
+const lastExecutionTimestamp = document.getElementById("lastExecutionTimestampTxt");
+const lastSessionIdTxt = document.getElementById("lastSessionIdTxt");
 
 function load() {
     chrome.storage.local.get(["enabled", "monitoredDomain", "endpoint"]).then(res => {
@@ -21,7 +22,13 @@ function save() {
     const endpoint = endpointInput.value.trim();
     const enabled = enabledCheckbox.checked;
 
-    chrome.storage.local.set({monitoredDomain, endpoint, enabled, sentResTime: null}).then(() => {
+    chrome.storage.local.set({
+        enabled,
+        endpoint,
+        lastExecutionTimestamp: null,
+        lastSessionId: null,
+        monitoredDomain
+    }).then(() => {
         statusTxt.textContent = "Saved!";
 
         setTimeout(updateStatus, 800);
@@ -29,11 +36,12 @@ function save() {
 }
 
 function updateStatus() {
-    chrome.storage.local.get(["enabled", "endpoint", "sentResTime"]).then(res => {
+    chrome.storage.local.get(["enabled", "endpoint", "lastExecutionTimestamp", "lastSessionId"]).then(res => {
         statusTxt.textContent = res.enabled ? "Enabled" : "Disabled";
         statusTxt.style.color = res.enabled ? "green" : "red";
         endpointTxt.textContent = res.endpoint || "not set"
-        sentResTimeTxt.textContent = res.sentResTime ? new Date(res.sentResTime).toLocaleString() : "No data sent yet.";
+        lastExecutionTimestamp.textContent = res.lastExecutionTimestamp ? new Date(res.lastExecutionTimestamp).toLocaleString() : "No data sent yet.";
+        lastSessionIdTxt.textContent = res.lastSessionId || "No data sent yet.";
     });
 }
 

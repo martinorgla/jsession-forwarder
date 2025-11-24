@@ -1,34 +1,34 @@
 const DEFAULT_ENDPOINT = "https://domeen.ee/patchSession";
+const FIVE_MINUTES = 5 * 60 * 1000;
 
 let config = {
     enabled: false,
+    endpoint: DEFAULT_ENDPOINT,
+    lastExecutionTimestamp: null,
+    lastSessionId: null,
     monitoredDomain: "",
-    endpoint: DEFAULT_ENDPOINT
 };
 
-const lastSent = {};
+function loadConfig() {
+    chrome.storage.local.get(["enabled", "endpoint", "lastExecutionTimestamp", "lastSessionId", "monitoredDomain"]).then(res => {
+        config.enabled = !!res.enabled;
+        config.endpoint = res.endpoint || DEFAULT_ENDPOINT;
+        config.lastExecutionTimestamp = res.lastExecutionTimestamp || null;
+        config.lastSessionId = res.lastSessionId || null;
+        config.monitoredDomain = res.monitoredDomain || "";
+    });
+}
 
-chrome.storage.local.get(["enabled", "monitoredDomain", "endpoint"]).then(res => {
-    config.enabled = !!res.enabled;
-    config.monitoredDomain = res.monitoredDomain || "";
-    config.endpoint = res.endpoint || DEFAULT_ENDPOINT;
-});
+function updateConfigValue(key, value) {
+    config[key] = value;
 
-chrome.storage.onChanged.addListener((changes, area) => {
-    if (area === "local") {
-        if (changes.enabled) {
-            config.enabled = changes.enabled.newValue;
-        }
+    const storageObj = {};
+    storageObj[key] = value;
 
-        if (changes.monitoredDomain) {
-            config.monitoredDomain = changes.monitoredDomain.newValue || "";
-        }
-
-        if (changes.endpoint) {
-            config.endpoint = changes.endpoint.newValue || DEFAULT_ENDPOINT;
-        }
-    }
-});
+    chrome.storage.local.set(storageObj, () => {
+        console.log(`Updated ${key} in config and local storage:`, value);
+    });
+}
 
 function isMonitored(monitoredUrl) {
     if (!config.monitoredDomain || config.monitoredDomain.trim() === "") {
@@ -46,7 +46,33 @@ function isMonitored(monitoredUrl) {
     }
 }
 
+chrome.storage.onChanged.addListener((changes, area) => {
+    if (area === "local") {
+        if (changes.enabled) {
+            config.enabled = changes.enabled.newValue;
+        }
+
+        if (changes.endpoint) {
+            config.endpoint = changes.endpoint.newValue || DEFAULT_ENDPOINT;
+        }
+
+        if (changes.lastExecutionTimestamp) {
+            config.lastExecutionTimestamp = changes.lastExecutionTimestamp.newValue || null;
+        }
+
+        if (changes.lastSessionId) {
+            config.lastSessionId = changes.lastSessionId.newValue || null;
+        }
+
+        if (changes.monitoredDomain) {
+            config.monitoredDomain = changes.monitoredDomain.newValue || "";
+        }
+    }
+});
+
 chrome.webRequest.onCompleted.addListener(async (details) => {
+        loadConfig();
+
         try {
             if (!config.enabled) {
                 return;
@@ -59,15 +85,26 @@ chrome.webRequest.onCompleted.addListener(async (details) => {
             const url = details.url;
             const cookies = await chrome.cookies.getAll({url});
 
-            const jsession = cookies.find(c => c.name === "JSESSIONID");
+            const jSession = cookies.find(c => c.name === "JSESSIONID");
             const xsrf = cookies.find(c => c.name === "XSRF-TOKEN");
             const expiryCookie = cookies.find(c => c.name === "sessionExpiry");
 
-            const jsessionVal = jsession ? jsession.value : null;
+            const jSessionVal = jSession ? jSession.value : null;
             const xsrfVal = xsrf ? xsrf.value : null;
             const sessionExpiryVal = expiryCookie ? (isNaN(Number(expiryCookie.value)) ? null : Number(expiryCookie.value)) : null;
 
-            if (!jsessionVal && !xsrfVal) {
+            if (!jSessionVal) {
+                console.log("Session expired. JSESSIONID missing");
+                return;
+            }
+
+            if (!xsrfVal) {
+                console.log("Session expired. XSRF-TOKEN missing");
+                return;
+            }
+
+            if (!sessionExpiryVal || sessionExpiryVal <= Date.now()) {
+                console.log("Session expired, sessionExpiry missing or invalid");
                 return;
             }
 
@@ -79,14 +116,15 @@ chrome.webRequest.onCompleted.addListener(async (details) => {
                 hostname = details.initiator || "unknown";
             }
 
-            if (lastSent[hostname] && lastSent[hostname] === jsessionVal) {
-                console.log(`${hostname} session already sent, skipping.`);
-
-                return;
+            if (config.lastExecutionTimestamp && config.lastSessionId === jSessionVal) {
+                if ((Date.now() - config.lastExecutionTimestamp) < FIVE_MINUTES) {
+                    console.log(`${hostname} last sentAt is newer than 5 minutes, skipping.`);
+                    return;
+                }
             }
 
             const payload = {
-                sessionId: jsessionVal,
+                sessionId: jSessionVal,
                 xsrfToken: xsrfVal,
                 sessionExpiry: sessionExpiryVal,
                 sourceUrl: url,
@@ -106,11 +144,8 @@ chrome.webRequest.onCompleted.addListener(async (details) => {
 
                 console.log("[Session Forwarder] Sent session to", endpoint, payload);
 
-                chrome.storage.local.set({sentResTime: Date.now()});
-
-                if (jsessionVal) {
-                    lastSent[hostname] = jsessionVal;
-                }
+                updateConfigValue("lastSessionId", jSessionVal);
+                updateConfigValue("lastExecutionTimestamp", Date.now());
             } catch (e) {
                 console.error("[Session Forwarder] Failed to send PATCH:", e);
             }

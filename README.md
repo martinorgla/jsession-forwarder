@@ -34,13 +34,13 @@ JSession Forwarder is a Chrome extension that reads the `JSESSIONID` and `XSRF-T
 
 ## Storage
 
-- `sentResTime` in Chrome's `localStorage` keeps track of the timestamp when the last session was successfully sent.
+- `lastExecutionTimestamp` in Chrome's `localStorage` keeps track of the timestamp when the last session was successfully sent.
 - Example of reading it:
 
 ```javascript
-chrome.storage.local.get('sentResTime', (data) => {
-  if (data.sentResTime) {
-    const lastSent = new Date(data.sentResTime);
+chrome.storage.local.get('lastExecutionTimestamp', (data) => {
+  if (data.lastExecutionTimestamp) {
+    const lastSent = new Date(data.lastExecutionTimestamp);
     console.log('Last session forwarded at:', lastSent.toLocaleString());
   }
 });
